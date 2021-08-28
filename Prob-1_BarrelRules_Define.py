@@ -42,30 +42,19 @@ if __name__ == '__main__':
         #e_avg_slg = 999999
         #e_avg = 999999
         #e_slg = 999999
-        #e_diff = 999999
         e_avg_slg = 0
         e_avg = 0
         e_slg = 0
-        e_diff = 0
         for _, ang1, ang2, avg, slg in df.values:
             e1 = (avg - 0.5 + slg - 1.5)
             e2 = avg - 0.5
             e3 = slg - 1.5
-            e4 = (ang2 - ang1)**2
-            #if e_avg_slg > e1 and ang1 > m['ang1'] and ang2 < m['ang2']:
-            #if e_avg > e2 and e_slg > e3 and ang1 > m['ang1'] and ang2 < m['ang2']:
-            #if e_avg_slg > e1 and e_avg > e2 and e_slg > e3 and ang1 > m['ang1'] and ang2 < m['ang2']:
-            #if e_avg_slg > e1 and e_avg > e2 and e_slg > e3:
-            #if e_diff > e4:
-            #if e_avg_slg < e1 and ang1 > m['ang1'] and ang2 < m['ang2']:
-            #if e_avg < e2 and e_slg < e3 and ang1 > m['ang1'] and ang2 < m['ang2']:
             if e_avg_slg < e1 and ang1 > m['ang1']:
             #if e_avg < e2 and e_slg < e3 and ang1 > m['ang1']:
             #if e_avg_slg < e1 and e_avg < e2 and e_slg < e3 and ang1 > m['ang1']:
                 e_avg_slg = e1
                 e_avg = e2
                 e_slg = e3
-                e_diff = e4
                 m['ang1'] = ang1
                 m['ang2'] = ang2
                 m['avg'] = avg
@@ -74,58 +63,78 @@ if __name__ == '__main__':
 
     print(ret)
     if True:
-        plt.plot(ret.velocity, ret.ang1, ret.velocity, ret.ang2)
-        plt.legend(['ang1', 'ang2'])
+        d1 = {'x': ret.velocity, 'y': ret.ang1}
+        d2 = {'x': ret.velocity, 'y': ret.ang2}
+        L1 = LinearRegression().fit(pd.DataFrame(d1['x']), d1['y'])
+        L2 = LinearRegression().fit(pd.DataFrame(d2['x']), d2['y'])
+        pred1 = L1.predict(pd.DataFrame(d1['x']))
+        #pred1 = pred1 - (pred1[0] - d1['y'][0])
+        pred2 = L2.predict(pd.DataFrame(d2['x']))
+        #pred2 = pred2 - (pred2[0] - d2['y'][0])
+        m1 = (pred1[len(pred1)-1] - pred1[0]) / (d1['x'][len(d1['x'])-1] - d1['x'][0])
+        n1 = pred1[0] - (m1 * d1['x'][0])
+        m2 = (pred2[len(pred2)-1] - pred2[0]) / (d2['x'][len(d2['x'])-1] - d2['x'][0])
+        n2 = pred2[0] - (m2 * d2['x'][0])
+        for idx, v in enumerate([(m1, n1, d1), (m2, n2, d2)]):
+            if v[1] == 0:
+                print(f'L{idx+1}, y = {round(v[0], 4)}x')
+            elif v[1] > 0:
+                print(f'L{idx+1}, y = {round(v[0], 4)}x + {round(v[1], 4)}')
+            else:
+                print(f'L{idx+1}, y = {round(v[0], 4)}x - {round(abs(v[1]), 4)}')
+        plt.plot(ret.velocity, ret.ang1, ret.velocity, ret.ang2, ret.velocity, pred1, ret.velocity, pred2)
+        plt.legend(['ang1', 'ang2', 'L1', 'L2'])
         plt.grid()
         plt.xlabel('velocity')
         plt.ylabel('angle')
         plt.show()
 
     # check graph
-    V = []
-    a1 = []
-    a2 = []
-    for v, df in grouped:
-        ratio = len(df)/len(origin)
-        print(f'[{v} km] ratio = {round(ratio, 4)}')
-        if ratio < 0.05:
-            continue
-        V.append(v)
-        a1.append(df.ang1.mode()[0])
-        a2.append(df.ang2.mode()[0])
-        #a1.append(df.ang1.mean())
-        #a2.append(df.ang2.mean())
-        #a1.append(df.ang1.quantile(.75))
-        #a2.append(df.ang2.quantile(.25))
-    d1 = {'x': V, 'y': a1}
-    d2 = {'x': V, 'y': a2}
-    L1 = LinearRegression()
-    L2 = LinearRegression()
-    L1.fit(pd.DataFrame(d1['x']), d1['y'])
-    L2.fit(pd.DataFrame(d2['x']), d2['y'])
-    pred1 = L1.predict(pd.DataFrame(d1['x']))
-    pred2 = L2.predict(pd.DataFrame(d2['x']))
-    m1 = (pred1[len(pred1)-1] - pred1[0]) / (d1['x'][len(d1['x'])-1] - d1['x'][0])
-    n1 = pred1[0] - (m1 * d1['x'][0])
-    m2 = (pred2[len(pred2)-1] - pred2[0]) / (d2['x'][len(d2['x'])-1] - d2['x'][0])
-    n2 = pred2[0] - (m2 * d2['x'][0])
-    for idx, v in enumerate([(m1, n1, d1), (m2, n2, d2)]):
-        if v[1] == 0:
-            print(f'L{idx+1}, y = {round(v[0], 4)}x')
-        elif v[1] > 0:
-            print(f'L{idx+1}, y = {round(v[0], 4)}x + {round(v[1], 4)}')
-        else:
-            print(f'L{idx+1}, y = {round(v[0], 4)}x - {round(abs(v[1]), 4)}')
-
     if False:
-        plt.plot(V, a1, V, pred1, V, a2, V, pred2)
-        #plt.plot(V, a1, V, pred1, V, a2, V, pred2, V, ret[ret.velocity.isin(V)].ang1, V, ret[ret.velocity.isin(V)].ang2)
-        plt.legend(['ang1 mode', 'ang1 linear-regression', 'ang2 mode', 'ang2 linear-regression'])
-        #plt.legend(['ang1 max', 'ang1 linear-regression', 'ang2 min', 'ang2 linear-regression', 'ang1 q3', 'ang2 q1'])
-        plt.xlabel('velocity')
-        plt.ylabel('angle')
-        plt.grid()
-        plt.show()
+        V = []
+        a1 = []
+        a2 = []
+        for v, df in grouped:
+            ratio = len(df)/len(origin)
+            print(f'[{v} km] ratio = {round(ratio, 4)}')
+            if ratio < 0.05:
+                continue
+            V.append(v)
+            a1.append(df.ang1.mode()[0])
+            a2.append(df.ang2.mode()[0])
+            #a1.append(df.ang1.mean())
+            #a2.append(df.ang2.mean())
+            #a1.append(df.ang1.quantile(.75))
+            #a2.append(df.ang2.quantile(.25))
+        d1 = {'x': V, 'y': a1}
+        d2 = {'x': V, 'y': a2}
+        L1 = LinearRegression()
+        L2 = LinearRegression()
+        L1.fit(pd.DataFrame(d1['x']), d1['y'])
+        L2.fit(pd.DataFrame(d2['x']), d2['y'])
+        pred1 = L1.predict(pd.DataFrame(d1['x']))
+        pred2 = L2.predict(pd.DataFrame(d2['x']))
+        m1 = (pred1[len(pred1)-1] - pred1[0]) / (d1['x'][len(d1['x'])-1] - d1['x'][0])
+        n1 = pred1[0] - (m1 * d1['x'][0])
+        m2 = (pred2[len(pred2)-1] - pred2[0]) / (d2['x'][len(d2['x'])-1] - d2['x'][0])
+        n2 = pred2[0] - (m2 * d2['x'][0])
+        for idx, v in enumerate([(m1, n1, d1), (m2, n2, d2)]):
+            if v[1] == 0:
+                print(f'L{idx+1}, y = {round(v[0], 4)}x')
+            elif v[1] > 0:
+                print(f'L{idx+1}, y = {round(v[0], 4)}x + {round(v[1], 4)}')
+            else:
+                print(f'L{idx+1}, y = {round(v[0], 4)}x - {round(abs(v[1]), 4)}')
+
+        if False:
+            plt.plot(V, a1, V, pred1, V, a2, V, pred2)
+            #plt.plot(V, a1, V, pred1, V, a2, V, pred2, V, ret[ret.velocity.isin(V)].ang1, V, ret[ret.velocity.isin(V)].ang2)
+            plt.legend(['ang1 mode', 'ang1 linear-regression', 'ang2 mode', 'ang2 linear-regression'])
+            #plt.legend(['ang1 max', 'ang1 linear-regression', 'ang2 min', 'ang2 linear-regression', 'ang1 q3', 'ang2 q1'])
+            plt.xlabel('velocity')
+            plt.ylabel('angle')
+            plt.grid()
+            plt.show()
 
     
     '''

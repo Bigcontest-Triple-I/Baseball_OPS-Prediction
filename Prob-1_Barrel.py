@@ -30,10 +30,11 @@ def parallel(df, v, values, columns, result):
     for ang in values:
         a1 = ang['ang1']
         a2 = ang['ang2']
+        df = df[(df.HIT_VEL >= v) & (df.HIT_VEL < v + vel_unit)]
         df['BARREL'] = getBarrel(df, v, a1, a2)
-        #if len(df[df.BARREL])/len(df) < 0.001:
+        if len(df[df.BARREL])/len(df) < 0.01:
         #if len(df[df.BARREL]) < 10:
-            #continue
+            continue
         avg, slg = getAVG_SLG(df[df.BARREL])
         if avg >= 0.5 and slg >= 1.5:
             data = [v, a1, a2, avg, slg]
@@ -86,8 +87,7 @@ if __name__ == '__main__':
     print(f'HTS data count = {len(origin)}')
 
     # HIT_RESULT filtering
-    filtering = False
-    if filtering:
+    if False:
         '''
         filters = np.array(['1루타', '2루타', '3루타', '병살타', '삼중살타', 
                            '직선타', '파울플라이', '플라이', '홈런', '희생플라이'])
